@@ -1,15 +1,11 @@
 import os
 import tempfile
 import traceback
-import wave
 import subprocess
 import logging
 from huggingface_hub import logging as hf_logging
 import json
 import threading
-import time
-import requests
-from pathlib import Path
 
 # Configurar el nivel de logging de huggingface_hub
 hf_logging.set_verbosity_info()
@@ -31,8 +27,8 @@ CORS(app)
 # Inicializar los modelos Whisper
 try:
     print("Initializing Whisper models...")
-    #device = "cpu"  # Usar CPU dentro del contenedor
-    device = "cuda"
+    device = "cpu"  # Usar CPU dentro del contenedor
+    #device = "cuda"
     model_dir = "/app/models"
     model_es = WhisperModel("large-v3-turbo", device=device, download_root=model_dir)
     model_eu = WhisperModel("xezpeleta/whisper-large-v3-eu-ct2", device=device, download_root=model_dir)

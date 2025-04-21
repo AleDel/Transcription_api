@@ -2,6 +2,75 @@
 
 Esta API, desarrollada en Python con Flask, proporciona servicios para la transcripción de audio, normalización de audio, gestión de archivos y evaluación de transcripciones. Utiliza modelos de reconocimiento de voz de la librería `faster-whisper` para realizar las transcripciones.
 
+## Creación de la Imagen y Ejecución del Contenedor Docker
+
+### Creación de la Imagen Docker
+
+Para crear la imagen Docker, ejecuta el siguiente comando en el directorio donde se encuentra el `Dockerfile`:
+
+```bash
+docker build -t whisper-api:latest .
+```
+
+Este comando construirá una imagen llamada `whisper-api` con la etiqueta `latest`.
+
+### Ejecución del Contenedor Docker
+
+Para ejecutar el contenedor, utiliza el siguiente comando, ajustando las rutas de los volúmenes según tu configuración:
+(Recuerda sustituir por las rutas reales)
+
+```bash
+docker run -d -p 5001:5001 --name whisper-api-container -v /audios:/app/audios -v /normalized_audios:/app/normalized_ audios -v /transcriptions:/app/transcriptions -v /evaluations:/app/evaluations -v /textos:/app/textos whisper-api:latest
+```
+**Explicación de los parámetros:**
+
+*   `-d`: Ejecuta el contenedor en segundo plano (detached mode).
+*   `-p 5001:5001`: Mapea el puerto 5001 del contenedor al puerto 5001 del host.
+*   `--name whisper-api-container`: Asigna el nombre `whisper-api-container
+*   `-v /audios:/app/audios`: Monta el directorio `/audios` del host en el directorio `/app/audios` del contenedor. Aquí se guardarán los audios originales.
+*   `-v /normalized_audios:/app/normalized_audios`: Monta el directorio `/normalized_audios` del host en el directorio `/app/normalized_audios` del contenedor. Aquí se guardarán los audios normalizados.
+*   `-v /transcriptions:/app/transcriptions`: Monta el directorio `/transcriptions` del host en el directorio `/app/transcriptions` del contenedor. Aquí se guardarán las transcripciones.
+*   `-v /evaluations:/app/evaluations`: Monta el directorio `/evaluations` del host en el directorio `/app/evaluations` del contenedor. Aquí se guardarán los archivos de evaluación.
+*   `-v /textos:/app/textos`: Monta el directorio `/textos` del host en el directorio `/app/textos` del contenedor. Aquí se guardarán los textos de referencia.
+*   `whisper-api:latest`: Especifica la imagen que se va a ejecutar.
+
+**Importante:** Ajusta las rutas de los volúmenes a las rutas correctas en tu sistema.
+
+## Ejemplos de Uso
+
+### Comprobar el Estado de un Audio (`/checkestado`)
+
+Para comprobar el estado de un audio, puedes usar la siguiente URL, reemplazando `34-1-3489` por el nombre del archivo de audio (sin extensión):
+```bash
+curl http://localhost:5001/checkestado?filename=34-1-3489
+```
+**Posibles respuestas:**
+
+*   **`{"estado": "procesando"}`:** El archivo se está procesando actualmente.
+*   **`{"estado": "en_cola", "file": "34-1-3489.wav", "file_procesando": "otro_archivo.wav"}`:** El archivo está en la cola, esperando a ser procesado. `file` indica el archivo que esta en cola y `file_procesando` el que se esta procesando.
+*   **`{"estado": "procesado"}`:** El archivo ya ha sido procesado.
+*   **`{"estado": "error", "message": "Audio file not found"}`:** El archivo no se ha encontrado.
+* **`{"estado": "procesando", "file": "34-1-3489.wav"}`:** El archivo se esta procesando.
+
+### Gestión de la Cola de Transcripciones
+
+Si envías varias peticiones a `/checkestado` para diferentes archivos mientras el servidor está ocupado, los archivos se añadirán a la cola. Por ejemplo:
+
+1.  Envías una petición para `http://localhost:5001/checkestado?filename=audio1`.
+2.  El servidor empieza a procesar `audio1`.
+3.  Envías otra petición para `http://localhost:5001/checkestado?filename=audio2`.
+4.  Como el servidor está ocupado, `audio2` se añade a la cola. La respuesta será: `{"estado": "en_cola", "file": "audio2.wav", "file_procesando": "audio1.wav"}`
+5.  Cuando `audio1` termine de procesarse, el servidor automáticamente empezará a procesar `audio2`.
+
+### Ejemplo de JSON de Transcripción
+
+Cuando un archivo se transcribe correctamente, se guarda un archivo JSON en `/app/transcriptions`. Un ejemplo de este archivo JSON podría ser:
+
+```json
+json [ { "word": "Hola", "start": 0.5, "end": 1.0, "probability": 0.95 }, { "word": "mundo", "start": 1.2, "end": 1.8, "probability": 0.92 }, { "word": "esto", "start": 2.0, "end": 2.3, "probability": 0.88 }, { "word": "es", "start": 2.3, "end": 2.4, "probability": 0.90 }, { "word": "una", "start": 2.4, "end": 2.6, "probability": 0.85 }, { "word": "prueba", "start": 2.6, "end": 3.2, "probability": 0.93 } ]
+```
+Este JSON contiene una lista de objetos, donde cada objeto representa una palabra transcrita con su tiempo de inicio (`start`), tiempo de fin (`end`) y la probabilidad de que la palabra haya sido transcrita correctamente (`probability`).
+
 ## Funcionalidades Principales
 
 1.  **Transcripción de Audio:**
