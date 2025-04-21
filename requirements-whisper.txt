@@ -1,0 +1,5 @@
+Flask
+faster-whisper
+flask-cors
+requests
+huggingface_hub
